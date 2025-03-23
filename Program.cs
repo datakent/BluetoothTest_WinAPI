@@ -7,57 +7,13 @@ namespace Bluetooth_WinAPI
 {
     class Program
     {
-        static bool preCheck(ulong deviceID, bool devInfo = true, bool wsVer = true)
-        {
-            // Bluetooth cihaz bilgisi için yapı oluştur
-            var deviceInfo = new WinAPI.BLUETOOTH_DEVICE_INFO(deviceID);
-
-            int r_devInfo = WinAPI.BluetoothGetDeviceInfo(IntPtr.Zero, ref deviceInfo);
-            if (r_devInfo != 0)
-            {
-                Console.WriteLine($"Bluetooth cihaz bilgisi alınamadı: {r_devInfo} {deviceID}");
-                return false;
-            }
-
-            Console.WriteLine($"Cihaz Adresi: {deviceInfo.Address}");
-            Console.WriteLine($"Cihaz Adı: {deviceInfo.szName}");
-            Console.WriteLine($"Cihaz Sınıfı: {deviceInfo.ulClassofDevice}");
-            Console.WriteLine($"Bağlı mı: {deviceInfo.fConnected}");
-            Console.WriteLine($"Eşleştirilmiş mi: {deviceInfo.fRemembered}");
-            Console.WriteLine($"Kimlik Doğrulandı mı: {deviceInfo.fAuthenticated}");
-
-
-            ushort versionRequested = 0x0202; // Winsock 2.2  -> 0x0202 -> 514
-            WinAPI.WSADATA wsadata;
-
-            int r_startup = WinAPI.WSAStartup(versionRequested, out wsadata);
-            if (r_startup != 0)
-            {
-                Console.WriteLine($"Winsock v2.2 sürüm kontrolü yapılamadı. Hata kodu: {r_startup}");
-                return false;
-            }
-
-            Console.WriteLine("Winsock başarıyla başlatıldı!");
-            Console.WriteLine($"Versiyon: {wsadata.wVersion >> 8}.{wsadata.wVersion & 0xFF}");
-            Console.WriteLine($"Açıklama: {wsadata.szDescription}");
-
-            return true;
-        }
-
-        static ulong macAddress2Ulong(string bluetoothAddress)
-        {
-            string cleanedAddress = bluetoothAddress.Replace(":", "").Replace("-", "");
-            return ulong.Parse(cleanedAddress, NumberStyles.HexNumber);
-        }
-
         static void Main(string[] args)
         {   
             //"Bluetooth View" uygulaması ile cihaz mac adresi alınabilir.
             string deviceMacAddress = "00:00:0e:03:40:0f";
 
-
-            string fileName = @"C:\Apps\ApplicationSource\@Printer SDK\RONGTA RPP320 Termal\gib_100px_color.bmp";
-
+            string fileName = "TestBitmap.bmp";
+            
             var p = new TSPLCmd();
             p.addCmd("SIZE 80 mm,40 mm");
             p.addCmd("GAP 0 mm,0 mm"); //0,0 -> Continuous label
@@ -76,18 +32,16 @@ namespace Bluetooth_WinAPI
             #region AddressConfig
             //Bluetooth View 'da Gösterilen Adres -> 00:00:0E:03:40:0F //00000E03400F   RPP320-400f-E
             //0x0f, 0x40, 0x03, 0x0e, 0x0, 0x0  -> ulong -> 235094031
-            //15, 64, 3, 14, 0, 0
-            var deviceID = macAddress2Ulong(deviceMacAddress); //ulong -> 235094031
+            var deviceID = macAddress2Ulong(deviceMacAddress);
 
-            var socketAddress = new System.Net.SocketAddress((System.Net.Sockets.AddressFamily)32, 30);//32,30
+            var socketAddress = new System.Net.SocketAddress((System.Net.Sockets.AddressFamily)32, 30);
             socketAddress[0] = checked((byte)32);//32 -> socket.AddressFamily
-            var devIdArr = BitConverter.GetBytes(deviceID);//235094031 -> 15,64,3,14,0,0,0,0
+            var devIdArr = BitConverter.GetBytes(deviceID);
             for (int i = 0; i < 6; i++)
             {
                 socketAddress[i + 2] = devIdArr[i];
             }
 
-            //Guid SerialPort_serviceId = new Guid(0x00001101, 0x0000, 0x1000, 0x80, 0x00, 0x00, 0x80, 0x5F, 0x9B, 0x34, 0xFB);
             Guid SerialPort_serviceId = Guid.Parse("{00001101-0000-1000-8000-00805f9b34fb}");
             var guidArray = SerialPort_serviceId.ToByteArray();
             for (int j = 0; j < 16; j++)
@@ -142,5 +96,48 @@ namespace Bluetooth_WinAPI
 
             Console.WriteLine($"Soket Handle: {socketHandle}");
         }
+
+        static bool preCheck(ulong deviceID, bool devInfo = true, bool wsVer = true)
+        {
+            // Bluetooth cihaz bilgisi için yapı oluştur
+            var deviceInfo = new WinAPI.BLUETOOTH_DEVICE_INFO(deviceID);
+
+            int r_devInfo = WinAPI.BluetoothGetDeviceInfo(IntPtr.Zero, ref deviceInfo);
+            if (r_devInfo != 0)
+            {
+                Console.WriteLine($"Bluetooth cihaz bilgisi alınamadı: {r_devInfo} {deviceID}");
+                return false;
+            }
+
+            Console.WriteLine($"Cihaz Adresi: {deviceInfo.Address}");
+            Console.WriteLine($"Cihaz Adı: {deviceInfo.szName}");
+            Console.WriteLine($"Cihaz Sınıfı: {deviceInfo.ulClassofDevice}");
+            Console.WriteLine($"Bağlı mı: {deviceInfo.fConnected}");
+            Console.WriteLine($"Eşleştirilmiş mi: {deviceInfo.fRemembered}");
+            Console.WriteLine($"Kimlik Doğrulandı mı: {deviceInfo.fAuthenticated}");
+
+
+            ushort versionRequested = 0x0202; // Winsock 2.2  -> 0x0202 -> 514
+            WinAPI.WSADATA wsadata;
+
+            int r_startup = WinAPI.WSAStartup(versionRequested, out wsadata);
+            if (r_startup != 0)
+            {
+                Console.WriteLine($"Winsock v2.2 sürüm kontrolü yapılamadı. Hata kodu: {r_startup}");
+                return false;
+            }
+
+            Console.WriteLine("Winsock başarıyla başlatıldı!");
+            Console.WriteLine($"Versiyon: {wsadata.wVersion >> 8}.{wsadata.wVersion & 0xFF}");
+            Console.WriteLine($"Açıklama: {wsadata.szDescription}");
+
+            return true;
+        }
+
+        static ulong macAddress2Ulong(string bluetoothAddress)
+        {
+            string cleanedAddress = bluetoothAddress.Replace(":", "").Replace("-", "");
+            return ulong.Parse(cleanedAddress, NumberStyles.HexNumber);
+        }        
     }
 }
